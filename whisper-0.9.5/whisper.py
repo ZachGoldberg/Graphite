@@ -258,10 +258,13 @@ timestamp is either an int or float
     break
   #First we update the highest-precision archive
   myInterval = timestamp - (timestamp % archive['secondsPerPoint'])
-  myPackedPoint = struct.pack(pointFormat,myInterval,value)
+
   fh.seek(archive['offset'])
   packedPoint = fh.read(pointSize)
   (baseInterval,baseValue) = struct.unpack(pointFormat,packedPoint)
+
+  myPackedPoint = struct.pack(pointFormat,myInterval,value)
+
   if baseInterval == 0: #This file's first update
     fh.seek(archive['offset'])
     fh.write(myPackedPoint)
@@ -271,8 +274,23 @@ timestamp is either an int or float
     pointDistance = timeDistance / archive['secondsPerPoint']
     byteDistance = pointDistance * pointSize
     myOffset = archive['offset'] + (byteDistance % archive['size'])
+
+    # Read in the previously written point at this offset.  If its within an interval
+    # of now then its for the same interval and we have 3 choices.  We can
+    # 1) Overwrite the point 
+    # 2) Add the point (default behavior)
+    # 3) 'rolling average' the point (x + y / 2)
+    fh.seek(myOffset)
+    previousPoint = fh.read(pointSize)
+    (prevInterval, prevValue) = struct.unpack(pointFormat, previousPoint)
+
+    if myInterval - prevInterval <= archive['secondsPerPoint']:
+      value += prevValue
+      myPackedPoint = struct.pack(pointFormat,prevInterval,value)
+
     fh.seek(myOffset)
     fh.write(myPackedPoint)
+
   #Now we propagate the update to lower-precision archives
   #startBlock('update propagation')
   higher = archive
