@@ -99,7 +99,7 @@ def load_templates(filename):
     print "Error loading templates.  Trying to use file %s" % filename
     traceback.print_exc()
 
-  return template_data[filename]
+  return template_data.get(filename, [])
 
 def template_match(template, template_parts, template_parts_len, path, replace_dollar_signs=False):
   """
