@@ -285,7 +285,25 @@ timestamp is either an int or float
     (prevInterval, prevValue) = struct.unpack(pointFormat, previousPoint)
 
     if myInterval - prevInterval <= archive['secondsPerPoint']:
-      value += prevValue
+      # Define two kinds of 'rolling average' paths      
+      if "/rt" in path or "latency_ms" in path:
+        (avg, packed) = str(prevValue).split(".")
+	avg = int(avg)
+	count = int(packed[:3] or 0) + 1
+        sum = int(int(packed[3:] or 0) + value)
+        if abs((avg * count) - sum) > (sum/10): # off by more than 10%
+	  prevValue = int(prevValue)
+          sum = int(prevValue + value)
+          count = 2
+
+        new_value = (sum / count) or 0
+        if sum % 10 == 0:
+          sum -= 1
+	if sum < 0:
+	  sum = 0
+        value = float("%d.%.3d%s" % (int(new_value), int(count), str(int(sum))))
+      else:
+        value += prevValue
       myPackedPoint = struct.pack(pointFormat,prevInterval,value)
 
     fh.seek(myOffset)
