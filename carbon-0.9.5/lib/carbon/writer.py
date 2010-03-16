@@ -101,14 +101,23 @@ def writeCachedDataPoints():
       data = {}
       try:
         t1 = time.time()
+         
+        counts = {}
 
         for dp in datapoints:
           key = long(dp[0] / 60)
 	  if not key in data:         
             data[key] = 0
+            counts[key] = 0
 
           data[key] += dp[1]
+          counts[key] += 1
 
+        if "/rt" in dbFilePath or "latency_ms" in dbFilePath:
+          print "AVERAGING", dbFilePath
+          for key, value in data.iteritems():
+             data[key] = value / counts[key]
+           
         for dptime, datavalue in data.iteritems():
           whisper.update(dbFilePath, datavalue, dptime * 60)
 
