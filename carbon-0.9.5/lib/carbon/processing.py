@@ -38,12 +38,14 @@ def processMetric(path):
   new_paths = []
 
   tempnum = 0
+  bucket_match = False
   for template, buckets in bucket_templates:    
     new_path = template_match(template, bucket_temp_parts[tempnum], 
                               len(bucket_temp_parts[tempnum]), path, replace_dollar_signs=False)
     tempnum += 1
 
     if new_path:
+      bucket_match = True
       path_parts = path.split(".")
       
       # This line matches a bucket template.  Add a new line for each bucket
@@ -66,10 +68,6 @@ def processMetric(path):
 
       break # Any one line should really only match one bucket template
   
-  if not new_paths:
-    new_paths = [path]
-
-
   template_matches = []
   # For each template we need go through all of the input and aggregate on that template
   for template in rollup_templates:
@@ -80,6 +78,12 @@ def processMetric(path):
     if new_path:
       new_path = "rollup_data." + new_path
       new_paths.append(new_path)
+      new_paths.append(path)
+
+  new_paths = list(set(new_paths))
+
+  if not new_paths and not bucket_match:
+    new_paths = [path]
 
   return new_paths
 
