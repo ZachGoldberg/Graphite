@@ -14,6 +14,14 @@ lastUsage = rusage.ru_utime + rusage.ru_stime
 lastUsageTime = time.time()
 
 
+def loadavg():
+  """Returns the system 5 minute load average"""
+  loadavgstr = open('/proc/loadavg', 'r').readline().strip()
+  data = loadavgstr.split()
+  avg1, avg5, avg15 = map(float, data[:3])
+  return (avg1, avg5, avg15)
+
+
 def increment(stat, increase=1):
   try:
     stats[stat] += increase
@@ -89,6 +97,10 @@ def recordCacheMetrics():
 
   store('cpuUsage', getCpuUsage())
 
+  loaddata = loadavg()
+  store('loadAverage1', loaddata[0])
+  store('loadAverage5', loaddata[1])
+  store('loadAverage15', loaddata[2])
 
 def store(metric, value):
   fullMetric = 'carbon.agents.%s.%s' % (HOSTNAME, metric)
@@ -111,6 +123,10 @@ def recordRelayMetrics():
   # global metrics
   send('metricsReceived', myStats.get('metricsReceived', 0))
   send('cpuUsage', getCpuUsage())
+  loaddata = loadavg()
+  store('loadAverage1', loaddata[0])
+  store('loadAverage5', loaddata[1])
+  store('loadAverage15', loaddata[2])
 
   # per-destination metrics
   for server in RelayServers:
