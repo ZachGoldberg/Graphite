@@ -124,9 +124,9 @@ def recordRelayMetrics():
   send('metricsReceived', myStats.get('metricsReceived', 0))
   send('cpuUsage', getCpuUsage())
   loaddata = loadavg()
-  store('loadAverage1', loaddata[0])
-  store('loadAverage5', loaddata[1])
-  store('loadAverage15', loaddata[2])
+  send('loadAverage1', loaddata[0])
+  send('loadAverage5', loaddata[1])
+  send('loadAverage15', loaddata[2])
 
   # per-destination metrics
   for server in RelayServers:
