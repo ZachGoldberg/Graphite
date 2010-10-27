@@ -1,6 +1,7 @@
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import Int32StringReceiver
+from carbon.processing import processMetric
 from carbon.rules import getDestinations, loadRules
 from carbon.conf import settings
 from carbon import log
@@ -16,15 +17,18 @@ RelayServers = []
 
 
 def relay(metric, datapoint):
-  for server in getServers(metric):
-    server.send(metric, datapoint)
+
+  metrics = processMetric(metric)
+
+  for metric in metrics:
+    for server in getServers(metric):
+      server.send(metric, datapoint)
 
 
 def getServers(metric):
   destinations = getDestinations(metric)
-
   for server in RelayServers:
-    if server.host in destinations:
+    if server.host in destinations or server.remoteAddr in destinations:
       yield server
 
 
@@ -97,7 +101,6 @@ class MetricSenderFactory(ReconnectingClientFactory):
 
   def send(self, metric, datapoint):
     increment(self.attemptedRelays)
-
     if len(self.queue) >= settings.MAX_QUEUE_SIZE:
       log.relay('relay queue full for %s, dropping data' % self.remoteAddr)
       increment(self.fullQueueDrops)

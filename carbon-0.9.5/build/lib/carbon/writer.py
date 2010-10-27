@@ -98,16 +98,36 @@ def writeCachedDataPoints():
         metaFilePath = join(dbDir, dbFileName[ :-len('.wsp') ] + '.context.pickle')
         createMetaFile(metric, schema, metaFilePath)
 
+      data = {}
       try:
         t1 = time.time()
-        whisper.update_many(dbFilePath, datapoints)
+         
+        counts = {}
+
+        for dp in datapoints:
+          key = long(dp[0] / 60)
+	  if not key in data:         
+            data[key] = 0
+            counts[key] = 0
+
+          data[key] += dp[1]
+          counts[key] += 1
+
+        if "/rt" in dbFilePath or "latency_ms" in dbFilePath:
+          print "AVERAGING", dbFilePath
+          for key, value in data.iteritems():
+             data[key] = value / counts[key]
+           
+        for dptime, datavalue in data.iteritems():
+          whisper.update(dbFilePath, datavalue, dptime * 60)
+
         t2 = time.time()
         updateTime = t2 - t1
       except:
         log.err()
         increment('errors')
       else:
-        pointCount = len(datapoints)
+        pointCount = len(data)
         log.updates("wrote %d datapoints for %s in %.5f seconds" % (pointCount, metric, updateTime))
         increment('committedPoints', pointCount)
         append('updateTimes', updateTime)
@@ -142,6 +162,7 @@ def writeForever():
   while reactor.running:
     try:
       writeCachedDataPoints()
+      print "write"
     except:
       log.err()
 
