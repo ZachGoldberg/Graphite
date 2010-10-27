@@ -109,11 +109,12 @@ def keepLastValue(seriesList):
       series[i] = value
   return seriesList
 
+
 def threshold(seriesList, threshold_value):
   for series in seriesList:
     series.name = "threshold (%s,%.1f)" % (series.name,float(threshold_value))
     for i,value in enumerate(series):
-      series[i] = threshold_value
+      series[i] = min(series[i], threshold_value)
   return seriesList
 
 def asPercent(seriesList1,seriesList2orNumber):
