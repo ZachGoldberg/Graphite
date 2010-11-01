@@ -45,6 +45,15 @@ def safeLast(values):
   for v in reversed(values):
     if v is not None: return v
 
+def safeBound(values, min = None, max = None):
+  safeValues = [v for v in values if v is not None]
+  if min:
+      safeValues = [v for v in safeValues if v >= min]
+  if max:
+      safeValues = [v for v in safeValues if v <= max]
+  if not safeValues: return None
+  return safeValues
+  
 def lcm(a,b):
   'least common multiple'
   if a == b: return a
@@ -100,6 +109,16 @@ def averageSeries(*seriesLists):
   series.pathExpression = name
   return [series]
 
+def boundedAverageSeries(min, max, *seriesLists):
+  (seriesList,start,end,step) = normalize(seriesLists)
+  #name = "averageSeries(%s)" % ','.join((s.name for s in seriesList))
+  name = "averageSeries(%s)" % ','.join(set([s.pathExpression for s in seriesList]))
+  bounded_rows = (safeBound(row, min, max) for row in izip(*seriesList))
+  values = ( safeDiv(safeSum(row),safeLen(row)) for row in bounded_rows ) #XXX izip
+  series = TimeSeries(name,start,end,step,values)
+  series.pathExpression = name
+  return [series]
+  
 def keepLastValue(seriesList):
   for series in seriesList:
     series.name = "keepLastValue(%s)" % (series.name)
@@ -346,6 +365,7 @@ SeriesFunctions = {
   'diffSeries' : diffSeries,
   'averageSeries' : averageSeries,
   'avg' : averageSeries,
+  'boundedAvg': boundedAverageSeries,
 
   # Transform functions
   'scale' : scale,
